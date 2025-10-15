@@ -16,22 +16,11 @@
 - [x] Compile the Project  
 	<!-- Python environment configured, backend dependencies installed successfully -->
 
-- [ ] Create and Run Task
-	<!--
-	Verify that all previous steps have been completed.
-	Check https://code.visualstudio.com/docs/debugtest/tasks to determine if the project needs a task. If so, use the create_and_run_task to create and launch a task based on package.json, README.md, and project structure.
-	Skip this step otherwise.
-	 -->
+- [x] Create and Run Task
+	<!-- Task created for backend server startup -->
 
-- [ ] Launch the Project
-	<!--
-	Verify that all previous steps have been completed.
-	Prompt user for debug mode, launch only if confirmed.
-	 -->
+- [x] Launch the Project
+	<!-- Backend server launched successfully on port 8000, frontend deployed to Vercel -->
 
-- [ ] Ensure Documentation is Complete
-	<!--
-	Verify that all previous steps have been completed.
-	Verify that README.md and the copilot-instructions.md file in the .github directory exists and contains current project information.
-	Clean up the copilot-instructions.md file in the .github directory by removing all HTML comments.
-	 -->
+- [x] Ensure Documentation is Complete
+	<!-- Project deployed to GitHub (https://github.com/DDVHegde100/GeoCV) and Vercel (https://geocv.vercel.app) -->
