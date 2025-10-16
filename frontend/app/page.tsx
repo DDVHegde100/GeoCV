@@ -44,6 +44,18 @@ export default function Home() {
       id: 'training',
       name: 'Training Mode',
       description: 'Watch AI reasoning process step by step'
+    }, 
+    {
+      id: 'expert',
+      name: 'Expert Mode',
+      description: 'Both AI and human get 10 seconds each',
+      time_limit: 10
+    },
+    {
+      id: 'streetview',
+      name: 'Street View Challenge',
+      description: 'Play with AI-generated Street View locations',
+      time_limit: 60
     }
   ];
 
@@ -55,6 +67,10 @@ export default function Home() {
   };
 
   const handleStartGame = async () => {
+    if (gameMode === 'streetview') {
+      return handleStartStreetViewGame();
+    }
+    
     if (!selectedFile) return;
 
     setIsStarting(true);
@@ -78,6 +94,22 @@ export default function Home() {
     } catch (error) {
       console.error('Failed to start game:', error);
       alert('Failed to start game. Please try again.');
+    } finally {
+      setIsStarting(false);
+    }
+  };
+
+  const handleStartStreetViewGame = async () => {
+    setIsStarting(true);
+    try {
+      const response = await axios.post('/api/backend/games/start-streetview', {
+        difficulty: 'medium' // Default to medium difficulty
+      });
+
+      setGameId(response.data.game_id);
+    } catch (error) {
+      console.error('Failed to start Street View game:', error);
+      alert('Failed to start Street View game. Please try again.');
     } finally {
       setIsStarting(false);
     }
@@ -122,12 +154,13 @@ export default function Home() {
         <div className="max-w-4xl mx-auto">
           <div className="bg-white rounded-2xl shadow-xl p-8">
             
-            {/* Step 1: Upload Image */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4 flex items-center">
-                <Upload className="w-6 h-6 mr-2 text-geocv-blue" />
-                Step 1: Upload Street View Image
-              </h2>
+            {/* Step 1: Upload Image (Skip for Street View mode) */}
+            {gameMode !== 'streetview' && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4 flex items-center">
+                  <Upload className="w-6 h-6 mr-2 text-geocv-blue" />
+                  Step 1: Upload Street View Image
+                </h2>
               
               <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-geocv-blue transition-colors">
                 <input
@@ -164,13 +197,25 @@ export default function Home() {
                   )}
                 </label>
               </div>
-            </div>
+              </div>
+            )}
+
+            {/* Street View Mode Notice */}
+            {gameMode === 'streetview' && (
+              <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <h3 className="text-lg font-semibold text-blue-800 mb-2">Street View Challenge Mode</h3>
+                <p className="text-blue-700">
+                  We'll generate a random Street View location for you! No need to upload an image - 
+                  the AI will analyze the same Street View as you and compete to guess the location.
+                </p>
+              </div>
+            )}
 
             {/* Step 2: Select Game Mode */}
             <div className="mb-8">
               <h2 className="text-2xl font-bold mb-4 flex items-center">
                 <Zap className="w-6 h-6 mr-2 text-geocv-blue" />
-                Step 2: Choose Game Mode
+                {gameMode === 'streetview' ? 'Step 1: Choose Game Mode' : 'Step 2: Choose Game Mode'}
               </h2>
               
               <div className="grid md:grid-cols-2 gap-4">
@@ -204,12 +249,13 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Step 3: Optional Actual Location */}
-            <div className="mb-8">
-              <h2 className="text-2xl font-bold mb-4 flex items-center">
-                <MapPin className="w-6 h-6 mr-2 text-geocv-blue" />
-                Step 3: Actual Location (Optional)
-              </h2>
+            {/* Step 3: Optional Actual Location (Only for non-Street View modes) */}
+            {gameMode !== 'streetview' && (
+              <div className="mb-8">
+                <h2 className="text-2xl font-bold mb-4 flex items-center">
+                  <MapPin className="w-6 h-6 mr-2 text-geocv-blue" />
+                  Step 3: Actual Location (Optional)
+                </h2>
               
               <div className="flex items-center space-x-4">
                 <button
@@ -266,15 +312,16 @@ export default function Home() {
                   </div>
                 </div>
               )}
-            </div>
+              </div>
+            )}
 
             {/* Start Game Button */}
             <div className="text-center">
               <button
                 onClick={handleStartGame}
-                disabled={!selectedFile || isStarting}
+                disabled={gameMode !== 'streetview' ? (!selectedFile || isStarting) : isStarting}
                 className={`px-8 py-4 rounded-lg font-bold text-lg transition-all ${
-                  selectedFile && !isStarting
+                  (gameMode === 'streetview' || selectedFile) && !isStarting
                     ? 'bg-geocv-blue text-white hover:bg-blue-700 shadow-lg hover:shadow-xl transform hover:scale-105'
                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                 }`}
@@ -282,12 +329,12 @@ export default function Home() {
                 {isStarting ? (
                   <span className="flex items-center">
                     <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2"></div>
-                    Starting Game...
+                    {gameMode === 'streetview' ? 'Finding Location...' : 'Starting Game...'}
                   </span>
                 ) : (
                   <span className="flex items-center">
                     <Target className="w-6 h-6 mr-2" />
-                    Start GeoCV Challenge
+                    {gameMode === 'streetview' ? 'Start Street View Challenge' : 'Start GeoCV Challenge'}
                   </span>
                 )}
               </button>
