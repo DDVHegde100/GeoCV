@@ -3,7 +3,7 @@
 import { useState, useRef } from 'react';
 import { Upload, Camera, MapPin, Zap, Target } from 'lucide-react';
 import axios from 'axios';
-import GameInterface from './components/GameInterface';
+import AIvsHumanInterface from './components/AIvsHumanInterface';
 
 interface GameMode {
   id: string;
@@ -84,7 +84,7 @@ export default function Home() {
         formData.append('actual_lon', actualLocation.lon.toString());
       }
 
-      const response = await axios.post('/api/backend/games/start', formData, {
+      const response = await axios.post('http://localhost:8000/api/v1/games/start', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -102,7 +102,7 @@ export default function Home() {
   const handleStartStreetViewGame = async () => {
     setIsStarting(true);
     try {
-      const response = await axios.post('/api/backend/games/start-streetview', {
+      const response = await axios.post('http://localhost:8000/api/v1/games/start-streetview', {
         difficulty: 'medium' // Default to medium difficulty
       });
 
@@ -125,17 +125,12 @@ export default function Home() {
     }
   };
 
-  if (gameId) {
-    return (
-      <GameInterface 
-        gameId={gameId} 
-        imageFile={selectedFile}
-        onGameEnd={resetGame}
-      />
-    );
-  }
-
   return (
+    <AIvsHumanInterface />
+  );
+
+  // Legacy UI for reference
+  const legacyUI = (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       <div className="container mx-auto px-4 py-8">
         {/* Header */}

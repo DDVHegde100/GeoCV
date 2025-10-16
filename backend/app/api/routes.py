@@ -19,12 +19,14 @@ router = APIRouter()
 # Global service instances (will be set in main.py)
 game_service: Optional[GameService] = None
 streetview_service: Optional[StreetViewService] = None
+websocket_service = None
 
-def set_services(game_svc: GameService, streetview_svc: StreetViewService):
+def set_services(game_svc: GameService, streetview_svc: StreetViewService, ws_svc=None):
     """Set the service instances"""
-    global game_service, streetview_service
+    global game_service, streetview_service, websocket_service
     game_service = game_svc
     streetview_service = streetview_svc
+    websocket_service = ws_svc
 
 # Pydantic models for request/response
 class StartGameRequest(BaseModel):
@@ -151,6 +153,105 @@ async def start_streetview_game(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start Street View game: {str(e)}")
 
+@router.post("/games/ai-vs-human")
+async def start_ai_vs_human_game(
+    difficulty: str = Form("medium"),
+    region: Optional[str] = Form(None)
+):
+    """Start a new AI vs Human competition with Tesla-style visualization"""
+    if not game_service or not streetview_service:
+        raise HTTPException(status_code=500, detail="Services not initialized")
+    
+    try:
+        # Import required services
+        from app.services.streetview_service import LocationDifficulty
+        from app.services.random_location_service import RandomLocationService
+        
+        # Parse difficulty
+        try:
+            difficulty_enum = LocationDifficulty(difficulty.lower())
+        except ValueError:
+            difficulty_enum = LocationDifficulty.MEDIUM
+        
+        # Create a random location service instance
+        random_location_service = RandomLocationService()
+        
+        # Generate a random location for fair AI vs Human competition
+        random_location = await random_location_service.get_random_location(
+            difficulty=difficulty_enum,
+            region_preference=region
+        )
+        
+        # Start game with enhanced AI analysis
+        game_id = await game_service.start_ai_vs_human_game(
+            location=random_location,
+            difficulty=difficulty_enum
+        )
+        
+        return {
+            "game_id": game_id,
+            "location": {
+                "lat": random_location["lat"],
+                "lon": random_location["lon"],
+                "street_view_urls": random_location["street_view_urls"]
+            },
+            "difficulty": difficulty,
+            "status": "started",
+            "message": "AI vs Human competition started! Both players dropped at random location."
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start AI vs Human game: {str(e)}")
+
+@router.get("/games/{game_id}/ai-analysis")
+async def get_ai_analysis(game_id: str):
+    """Get real-time AI analysis with Tesla-style visual overlays"""
+    if not game_service:
+        raise HTTPException(status_code=500, detail="Game service not initialized")
+    
+    try:
+        # Get the game state
+        game_state = game_service.get_game_state(game_id)
+        if not game_state:
+            raise HTTPException(status_code=404, detail="Game not found")
+        
+        # Get AI analysis with visual overlays
+        analysis = await game_service.get_ai_analysis_with_overlays(game_id)
+        
+        if analysis is None:
+            raise HTTPException(status_code=404, detail="Analysis not available")
+        
+        return {
+            "game_id": game_id,
+            "analysis": analysis,
+            "status": "success"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get AI analysis: {str(e)}")
+
+@router.get("/games/{game_id}/live-overlays")
+async def get_live_overlays(game_id: str):
+    """Get live Tesla-style visual overlays for AI analysis"""
+    if not game_service:
+        raise HTTPException(status_code=500, detail="Game service not initialized")
+    
+    try:
+        overlays = await game_service.get_live_overlays(game_id)
+        
+        if overlays is None:
+            raise HTTPException(status_code=404, detail="Game not found or overlays not ready")
+        
+        return {
+            "game_id": game_id,
+            "overlays": overlays,
+            "timestamp": overlays.get("timestamp"),
+            "status": "success"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get live overlays: {str(e)}")
+
 @router.get("/games/{game_id}/status")
 async def get_game_status(game_id: str):
     """Get current status of a game"""
@@ -210,6 +311,8 @@ async def analyze_image_endpoint(image: UploadFile = File(...)):
         async with aiofiles.open(file_path, 'wb') as f:
             content = await image.read()
             await f.write(content)
+            await f.write(of(image.write()));
+        
         
         # Run CV analysis
         analysis_result = await game_service.cv_pipeline.analyze_image(file_path)

@@ -45,8 +45,9 @@ class GameResult:
 class GameService:
     """Main game coordination service"""
     
-    def __init__(self, cv_pipeline: CVPipeline):
+    def __init__(self, cv_pipeline: CVPipeline, websocket_service=None):
         self.cv_pipeline = cv_pipeline
+        self.websocket_service = websocket_service
         self.active_games: Dict[str, GameState] = {}
         self.game_results: List[GameResult] = []
         
@@ -57,6 +58,10 @@ class GameService:
             'blitz': {'time_limit': 15, 'description': 'Quick rounds - 15s for AI'},
             'training': {'time_limit': None, 'description': 'See AI reasoning step by step'}
         }
+    
+    def set_websocket_service(self, websocket_service):
+        """Set websocket service after initialization"""
+        self.websocket_service = websocket_service
     
     async def start_new_game(self, image_path: str, game_mode: str = 'classic', 
                             actual_location: Optional[Tuple[float, float]] = None) -> str:
@@ -155,6 +160,16 @@ class GameService:
             
             for i, step in enumerate(analysis_steps):
                 game_state.ai_confidence_display = step
+                
+                # Send real-time update via WebSocket
+                if self.websocket_service:
+                    await self.websocket_service.broadcast_analysis_update(game_id, {
+                        'step': step,
+                        'progress': (i + 1) / len(analysis_steps),
+                        'step_number': i + 1,
+                        'total_steps': len(analysis_steps)
+                    })
+                
                 await asyncio.sleep(0.5)  # Simulate processing time
                 
                 # Add some realistic processing delays for different steps
@@ -182,12 +197,22 @@ class GameService:
             game_state.ai_confidence_display = f"✅ Analysis complete! {confidence_text}"
             game_state.status = 'waiting_human'
             
+            # Send final game state update via WebSocket
+            if self.websocket_service:
+                game_state_dict = self.get_game_state(game_id)
+                if game_state_dict:
+                    await self.websocket_service.broadcast_game_state(game_id, game_state_dict)
+            
             logger.info(f"AI analysis completed for game {game_id}")
             
         except Exception as e:
             logger.error(f"AI analysis failed for game {game_id}: {e}")
             game_state.ai_confidence_display = f"❌ Analysis failed: {str(e)}"
             game_state.status = 'error'
+            
+            # Send error via WebSocket
+            if self.websocket_service:
+                await self.websocket_service.send_error_to_game(game_id, str(e))
     
     async def _run_streetview_analysis(self, game_id: str):
         """Run AI analysis for a Street View game"""
@@ -343,6 +368,11 @@ class GameService:
         if game_state.actual_location and game_state.ai_guess:
             result = self._calculate_game_result(game_state)
             self.game_results.append(result)
+            
+            # Send game completion via WebSocket
+            if self.websocket_service:
+                from dataclasses import asdict
+                await self.websocket_service.broadcast_game_complete(game_id, asdict(result))
             
             # Remove from active games
             del self.active_games[game_id]
@@ -608,3 +638,235 @@ class GameService:
         final_lon = max(-180, min(180, lon + final_lon_error))
         
         return (final_lat, final_lon)
+    
+    async def start_ai_vs_human_game(self, location: Dict, difficulty) -> str:
+        """Start a new AI vs Human competition with Tesla-style visualization"""
+        
+        game_id = str(uuid.uuid4())
+        
+        # Initialize enhanced game state for AI vs Human competition
+        game_state = GameState(
+            game_id=game_id,
+            image_path=None,
+            streetview_location={
+                "location": {
+                    "lat": location["lat"],
+                    "lon": location["lon"]
+                },
+                "street_view_urls": location["street_view_urls"],
+                "metadata": {
+                    "difficulty": difficulty.value,
+                    "game_type": "ai_vs_human"
+                }
+            },
+            ai_analysis=None,
+            ai_guess=None,
+            human_guess=None,
+            actual_location=(location["lat"], location["lon"]),
+            game_mode='ai_vs_human',
+            time_limit=None,  # No time limit for fair competition
+            start_time=time.time(),
+            status='analyzing',
+            ai_confidence_display='🤖 AI analyzing Street View imagery...',
+            difficulty=difficulty.value
+        )
+        
+        self.active_games[game_id] = game_state
+        
+        # Start enhanced AI analysis with Tesla-style overlays
+        asyncio.create_task(self._run_enhanced_ai_analysis(game_id))
+        
+        logger.info(f"Started AI vs Human game: {game_id}, difficulty: {difficulty.value}")
+        return game_id
+    
+    async def _run_enhanced_ai_analysis(self, game_id: str):
+        """Run enhanced AI analysis with Tesla-style visual overlays"""
+        
+        game_state = self.active_games.get(game_id)
+        if not game_state:
+            return
+        
+        try:
+            # Enhanced analysis steps with Tesla-style processing
+            analysis_steps = [
+                "🤖 Initializing computer vision systems...",
+                "📡 Loading multi-directional Street View data...",
+                "🔍 Detecting objects with neural networks...", 
+                "🚗 Analyzing vehicles and transportation systems...",
+                "🏢 Processing architectural patterns and building styles...",
+                "🌳 Examining vegetation and climate indicators...",
+                "📝 Reading and interpreting visible text/signage...",
+                "🛣️ Analyzing road infrastructure and traffic patterns...",
+                "🧠 Correlating features with geographic databases...",
+                "🎯 Calculating location probability matrices..."
+            ]
+            
+            for i, step in enumerate(analysis_steps):
+                game_state.ai_confidence_display = step
+                
+                # Send real-time update via WebSocket with enhanced data
+                if self.websocket_service:
+                    await self.websocket_service.broadcast_analysis_update(game_id, {
+                        'step': step,
+                        'progress': (i + 1) / len(analysis_steps),
+                        'step_number': i + 1,
+                        'total_steps': len(analysis_steps),
+                        'analysis_type': 'enhanced_tesla_style'
+                    })
+                
+                await asyncio.sleep(0.8)  # Realistic processing time
+            
+            # Run enhanced CV analysis with visual overlays
+            game_state.ai_confidence_display = "🔬 Running enhanced computer vision analysis..."
+            
+            # Get the Street View URLs for multi-directional analysis
+            street_view_urls = game_state.streetview_location.get("street_view_urls", {})
+            
+            # Run the enhanced CV pipeline with overlays
+            analysis_result = await self.cv_pipeline.analyze_streetview_with_overlays(
+                street_view_urls=street_view_urls,
+                location=(game_state.actual_location[0], game_state.actual_location[1])
+            )
+            
+            game_state.ai_analysis = analysis_result
+            
+            # Generate AI guess based on enhanced analysis
+            game_state.ai_confidence_display = "🤔 AI formulating location hypothesis..."
+            await asyncio.sleep(1.5)
+            
+            ai_guess = self._generate_enhanced_ai_guess(analysis_result, game_state.difficulty)
+            game_state.ai_guess = ai_guess
+            
+            # Update final status
+            confidence_text = self._get_confidence_text(analysis_result.get("overall_confidence", 0.7))
+            game_state.ai_confidence_display = f"✅ Enhanced AI analysis complete! {confidence_text}"
+            game_state.status = 'waiting_human'
+            
+            # Send final game state update via WebSocket
+            if self.websocket_service:
+                game_state_dict = self.get_game_state(game_id)
+                if game_state_dict:
+                    await self.websocket_service.broadcast_game_state(game_id, game_state_dict)
+            
+            logger.info(f"Enhanced AI analysis completed for game {game_id}")
+            
+        except Exception as e:
+            logger.error(f"Enhanced AI analysis failed for game {game_id}: {e}")
+            game_state.ai_confidence_display = f"❌ Enhanced analysis failed: {str(e)}"
+            game_state.status = 'error'
+    
+    def _generate_enhanced_ai_guess(self, analysis_result: Dict, difficulty: str) -> Tuple[float, float]:
+        """Generate AI guess from enhanced analysis with Tesla-style overlays"""
+        
+        # Extract analysis data
+        predictions = analysis_result.get("location_predictions", [])
+        confidence_scores = analysis_result.get("confidence_scores", {})
+        detected_features = analysis_result.get("detected_features", {})
+        
+        # Use the highest confidence prediction as base
+        if predictions:
+            best_prediction = max(predictions, key=lambda x: x.get("confidence", 0))
+            base_lat = best_prediction.get("lat", 45.0)
+            base_lon = best_prediction.get("lon", 10.0)
+            base_confidence = best_prediction.get("confidence", 0.5)
+        else:
+            # Fallback to center of detected region
+            base_lat, base_lon, base_confidence = 45.0, 10.0, 0.3
+        
+        # Apply difficulty-based accuracy adjustment
+        accuracy_factors = {
+            "easy": 0.8,     # High accuracy
+            "medium": 0.6,   # Medium accuracy  
+            "hard": 0.4,     # Lower accuracy
+            "expert": 0.2    # Challenging accuracy
+        }
+        
+        accuracy_factor = accuracy_factors.get(difficulty, 0.6)
+        
+        # Calculate error based on confidence and difficulty
+        max_error_degrees = (1.0 - base_confidence * accuracy_factor) * 15.0  # Max ~15 degrees error
+        
+        # Add some controlled randomness
+        import random
+        lat_error = (random.random() - 0.5) * max_error_degrees
+        lon_error = (random.random() - 0.5) * max_error_degrees
+        
+        final_lat = max(-90, min(90, base_lat + lat_error))
+        final_lon = max(-180, min(180, base_lon + lon_error))
+        
+        return (final_lat, final_lon)
+    
+    async def get_ai_analysis_with_overlays(self, game_id: str) -> Optional[Dict]:
+        """Get AI analysis with Tesla-style visual overlays"""
+        
+        game_state = self.active_games.get(game_id)
+        if not game_state or not game_state.ai_analysis:
+            return None
+        
+        # Return the enhanced analysis data with overlays
+        analysis = game_state.ai_analysis
+        
+        if isinstance(analysis, dict):
+            return {
+                "overlays": analysis.get("overlays", {}),
+                "detected_objects": analysis.get("detected_objects", []),
+                "confidence_scores": analysis.get("confidence_scores", {}),
+                "location_predictions": analysis.get("location_predictions", []),
+                "processing_info": {
+                    "directions_analyzed": analysis.get("directions_analyzed", []),
+                    "analysis_timestamp": analysis.get("timestamp"),
+                    "total_objects_detected": len(analysis.get("detected_objects", [])),
+                    "ai_confidence": game_state.ai_confidence_display
+                }
+            }
+        else:
+            # Handle CVAnalysisResult objects
+            return {
+                "overlays": {},
+                "detected_objects": [
+                    {
+                        "type": d.feature_type,
+                        "confidence": d.confidence,
+                        "bounding_box": d.bounding_box,
+                        "geographic_hints": d.geographic_hints
+                    }
+                    for d in analysis.detections
+                ],
+                "confidence_scores": {"overall": analysis.overall_confidence},
+                "location_predictions": analysis.suggested_regions,
+                "processing_info": {
+                    "directions_analyzed": ["front"],
+                    "total_objects_detected": len(analysis.detections),
+                    "ai_confidence": game_state.ai_confidence_display
+                }
+            }
+    
+    async def get_live_overlays(self, game_id: str) -> Optional[Dict]:
+        """Get live Tesla-style visual overlays"""
+        
+        game_state = self.active_games.get(game_id)
+        if not game_state:
+            return None
+        
+        # Get current analysis if available
+        analysis = await self.get_ai_analysis_with_overlays(game_id)
+        if not analysis:
+            return {
+                "overlays": {},
+                "status": "analyzing",
+                "message": game_state.ai_confidence_display,
+                "timestamp": time.time()
+            }
+        
+        return {
+            "overlays": analysis.get("overlays", {}),
+            "detected_objects": analysis.get("detected_objects", []),
+            "status": game_state.status,
+            "ai_status": game_state.ai_confidence_display,
+            "timestamp": time.time(),
+            "game_progress": {
+                "ai_guess_ready": game_state.ai_guess is not None,
+                "human_guess_submitted": game_state.human_guess is not None,
+                "analysis_complete": game_state.status != "analyzing"
+            }
+        }

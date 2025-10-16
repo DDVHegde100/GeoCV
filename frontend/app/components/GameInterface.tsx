@@ -1,7 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { MapPin, Clock, Brain, User } from 'lucide-react';
+import { MapPin, Clock, Brain, User, Wifi, WifiOff } from 'lucide-react';
+import StreetViewPlayer from './StreetViewPlayer';
+import { useWebSocket } from '../hooks/useWebSocket';
+import '../styles/GameInterface.css';
 
 interface GameInterfaceProps {
   gameId: string;
@@ -13,6 +16,13 @@ interface GameState {
   game_id: string;
   status: string;
   ai_confidence_display: string;
+  game_type?: 'upload' | 'streetview';
+  streetview_location?: {
+    lat: number;
+    lon: number;
+    image_url: string;
+    metadata?: any;
+  };
   ai_features?: {
     detections_count: number;
     confidence_level: string;
@@ -32,10 +42,46 @@ export default function GameInterface({ gameId, imageFile, onGameEnd }: GameInte
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [gameResult, setGameResult] = useState<any>(null);
 
+  // Real-time WebSocket connection
+  const {
+    connectionStatus,
+    lastUpdate,
+    analysisProgress,
+    requestGameUpdate
+  } = useWebSocket(gameId);
+
+  // Handle real-time updates
   useEffect(() => {
+    if (lastUpdate) {
+      switch (lastUpdate.type) {
+        case 'analysis_progress':
+          // Real-time analysis progress is handled by analysisProgress state
+          break;
+        case 'state_update':
+          setGameState(lastUpdate.data);
+          break;
+        case 'game_completed':
+          setGameResult(lastUpdate.data);
+          break;
+        case 'error':
+          console.error('Game error:', lastUpdate.data.error);
+          break;
+      }
+    }
+  }, [lastUpdate]);
+
+  // Fallback polling for when WebSocket is not connected
+  useEffect(() => {
+    if (connectionStatus.connected) {
+      // WebSocket is handling updates, request initial state
+      requestGameUpdate(gameId);
+      return;
+    }
+
+    // Fallback to polling when WebSocket is not available
     const pollGameState = async () => {
       try {
-        const response = await fetch(`/api/backend/games/${gameId}/status`);
+        const response = await fetch(`http://localhost:8000/api/v1/games/${gameId}/status`);
         if (response.ok) {
           const state = await response.json();
           setGameState(state);
@@ -45,18 +91,18 @@ export default function GameInterface({ gameId, imageFile, onGameEnd }: GameInte
       }
     };
 
-    const interval = setInterval(pollGameState, 1000);
+    const interval = setInterval(pollGameState, 2000); // Slower polling as fallback
     pollGameState(); // Initial call
 
     return () => clearInterval(interval);
-  }, [gameId]);
+  }, [gameId, connectionStatus.connected, requestGameUpdate]);
 
   const handleSubmitGuess = async () => {
     if (!userGuess.lat || !userGuess.lon) return;
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`/api/backend/games/${gameId}/guess`, {
+      const response = await fetch(`http://localhost:8000/api/v1/games/${gameId}/guess`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -135,8 +181,15 @@ export default function GameInterface({ gameId, imageFile, onGameEnd }: GameInte
                 AI Computer Vision Analysis
               </h2>
               
-              {/* Image Display */}
-              {imageFile && (
+              {/* Image/Street View Display */}
+              {gameState?.game_type === 'streetview' && gameState.streetview_location ? (
+                <div className="mb-6">
+                  <StreetViewPlayer 
+                    location={gameState.streetview_location}
+                    className="w-full h-64 rounded-lg shadow-lg"
+                  />
+                </div>
+              ) : imageFile && (
                 <div className="mb-6">
                   <img 
                     src={URL.createObjectURL(imageFile)} 
@@ -146,18 +199,57 @@ export default function GameInterface({ gameId, imageFile, onGameEnd }: GameInte
                 </div>
               )}
               
+              {/* Connection Status */}
+              <div className="bg-white rounded-lg p-3 mb-4 border-l-4 border-geocv-blue">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center">
+                    {connectionStatus.connected ? (
+                      <Wifi className="w-4 h-4 text-green-500 mr-2" />
+                    ) : (
+                      <WifiOff className="w-4 h-4 text-red-500 mr-2" />
+                    )}
+                    <span className="text-sm font-medium">
+                      {connectionStatus.connected ? 'Live Updates' : 'Offline Mode'}
+                    </span>
+                  </div>
+                  {connectionStatus.error && (
+                    <span className="text-xs text-red-500">{connectionStatus.error}</span>
+                  )}
+                </div>
+              </div>
+
               {/* AI Status */}
               <div className="bg-white rounded-lg p-4 mb-4">
                 <h3 className="font-bold mb-2">AI Status</h3>
-                <p className="text-sm text-gray-600">
-                  {gameState?.ai_confidence_display || 'Initializing...'}
-                </p>
                 
-                {gameState?.status === 'analyzing' && (
-                  <div className="mt-2">
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div className="bg-geocv-blue h-2 rounded-full animate-pulse" style={{width: '60%'}}></div>
+                {/* Real-time analysis progress */}
+                {analysisProgress && connectionStatus.connected ? (
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">
+                      {analysisProgress.step}
+                    </p>
+                    <div className="realtime-progress-container">
+                      <div 
+                        className={`realtime-progress-bar progress-${Math.min(100, Math.max(0, Math.floor(analysisProgress.progress / 10) * 10))}`}
+                      ></div>
                     </div>
+                    <p className="text-xs text-gray-500">
+                      Step {analysisProgress.step_number} of {analysisProgress.total_steps}
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-sm text-gray-600">
+                      {gameState?.ai_confidence_display || 'Initializing...'}
+                    </p>
+                    
+                    {gameState?.status === 'analyzing' && (
+                      <div className="mt-2">
+                        <div className="w-full bg-gray-200 rounded-full h-2">
+                          <div className="bg-geocv-blue h-2 rounded-full animate-pulse w-3/5"></div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>

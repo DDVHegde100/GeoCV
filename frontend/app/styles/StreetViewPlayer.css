@@ -1,0 +1,175 @@
+/* Street View Player Styles */
+.streetview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  user-select: none;
+  transition: transform 0.3s ease-out;
+}
+
+.streetview-image.dragging {
+  transition: none;
+  cursor: grabbing;
+}
+
+.streetview-image:not(.dragging) {
+  cursor: grab;
+}
+
+.streetview-container {
+  position: relative;
+  background: black;
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.streetview-container.fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  border-radius: 0;
+}
+
+.panoramic-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to right,
+    rgba(0, 0, 0, 0.2),
+    transparent,
+    rgba(0, 0, 0, 0.2)
+  );
+  pointer-events: none;
+}
+
+.control-panel {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.directional-controls {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.25rem;
+}
+
+.zoom-controls {
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 0.5rem;
+  padding: 0.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.control-button {
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.2);
+  border: none;
+  border-radius: 0.25rem;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.control-button:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.fullscreen-button {
+  padding: 0.75rem;
+  background: rgba(0, 0, 0, 0.5);
+  border: none;
+  border-radius: 0.5rem;
+  color: white;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.fullscreen-button:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.view-info {
+  position: absolute;
+  bottom: 1rem;
+  left: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+}
+
+.instructions {
+  position: absolute;
+  bottom: 1rem;
+  right: 1rem;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.75rem;
+  max-width: 20rem;
+}
+
+.loading-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgb(17, 24, 39);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+.loading-spinner {
+  animation: spin 1s linear infinite;
+  border-radius: 50%;
+  height: 4rem;
+  width: 4rem;
+  border: 2px solid transparent;
+  border-bottom: 2px solid rgb(59, 130, 246);
+  margin-bottom: 1rem;
+}
+
+.error-state {
+  background: rgb(243, 244, 246);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .control-panel {
+    top: 0.5rem;
+    right: 0.5rem;
+    gap: 0.25rem;
+  }
+  
+  .view-info,
+  .instructions {
+    bottom: 0.5rem;
+    font-size: 0.75rem;
+    padding: 0.5rem;
+  }
+  
+  .instructions {
+    right: 0.5rem;
+    max-width: 16rem;
+  }
+}

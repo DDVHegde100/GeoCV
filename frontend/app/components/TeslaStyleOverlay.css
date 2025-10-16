@@ -1,0 +1,323 @@
+/* Tesla-Style Overlay CSS */
+.tesla-overlay-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background: #000;
+  border-radius: 8px;
+  overflow: hidden;
+  font-family: 'SF Mono', 'Monaco', 'Inconsolata', monospace;
+}
+
+.image-canvas-wrapper {
+  position: relative;
+  width: 100%;
+  height: 70vh;
+  overflow: hidden;
+}
+
+.streetview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.overlay-canvas {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  pointer-events: none !important;
+}
+
+/* AI Status Panel */
+.ai-status-panel {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: linear-gradient(180deg, transparent 0%, rgba(0, 0, 0, 0.9) 100%);
+  padding: 20px;
+  color: #fff;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.status-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.ai-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  transition: all 0.3s ease;
+}
+
+.ai-dot.analyzing {
+  background: #4ECDC4;
+  animation: pulse 1.5s infinite;
+  box-shadow: 0 0 10px #4ECDC4;
+}
+
+.ai-dot.ready {
+  background: #95E1D3;
+  box-shadow: 0 0 5px #95E1D3;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.ai-label {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: #4ECDC4;
+}
+
+.confidence-display {
+  display: flex;
+  align-items: center;
+}
+
+.confidence-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: #4ECDC4;
+  letter-spacing: 0.3px;
+}
+
+.status-message {
+  font-size: 14px;
+  color: #fff;
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background: rgba(76, 205, 196, 0.1);
+  border-left: 3px solid #4ECDC4;
+  border-radius: 4px;
+}
+
+/* Detection Summary */
+.detection-summary {
+  margin-bottom: 16px;
+}
+
+.summary-header {
+  font-size: 10px;
+  font-weight: 600;
+  color: #4ECDC4;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.object-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.object-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  font-size: 11px;
+}
+
+.object-color-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.object-name {
+  color: #fff;
+  font-weight: 500;
+}
+
+.object-confidence {
+  color: #4ECDC4;
+  font-weight: 600;
+}
+
+/* Color Legend */
+.color-legend {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(76, 205, 196, 0.3);
+}
+
+.legend-title {
+  font-size: 10px;
+  font-weight: 600;
+  color: #4ECDC4;
+  letter-spacing: 0.5px;
+  margin-bottom: 8px;
+}
+
+.legend-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11px;
+  color: #fff;
+}
+
+.legend-color {
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* Color-specific classes for legend items */
+.legend-color.vehicles {
+  background-color: #4ECDC4;
+}
+
+.legend-color.buildings {
+  background-color: #FF6B6B;
+}
+
+.legend-color.text-signs {
+  background-color: #FF9F43;
+}
+
+.legend-color.infrastructure {
+  background-color: #A8E6CF;
+}
+
+.legend-color.vegetation {
+  background-color: #95E1D3;
+}
+
+/* Object color indicator classes */
+.object-color-indicator.color-vehicle,
+.object-color-indicator.color-car,
+.object-color-indicator.color-truck {
+  background-color: #4ECDC4;
+}
+
+.object-color-indicator.color-building,
+.object-color-indicator.color-architecture {
+  background-color: #FF6B6B;
+}
+
+.object-color-indicator.color-text,
+.object-color-indicator.color-sign {
+  background-color: #FF9F43;
+}
+
+.object-color-indicator.color-infrastructure,
+.object-color-indicator.color-road {
+  background-color: #A8E6CF;
+}
+
+.object-color-indicator.color-vegetation,
+.object-color-indicator.color-tree {
+  background-color: #95E1D3;
+}
+
+.object-color-indicator.color-default {
+  background-color: #FFFFFF;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .ai-status-panel {
+    padding: 16px;
+  }
+  
+  .status-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+  
+  .legend-items {
+    justify-content: center;
+  }
+  
+  .object-list {
+    justify-content: center;
+  }
+}
+
+/* Animation for scanning effect */
+@keyframes scanning {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+  }
+  90% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh);
+    opacity: 0;
+  }
+}
+
+/* Loading state */
+.tesla-overlay-container.loading .image-canvas-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #4ECDC4, transparent);
+  animation: scanning 3s infinite;
+}
+
+/* High contrast mode for better visibility */
+.tesla-overlay-container.high-contrast {
+  --primary-color: #00FF00;
+  --secondary-color: #FFFF00;
+  --accent-color: #FF0000;
+}
+
+.tesla-overlay-container.high-contrast .ai-dot.analyzing {
+  background: var(--primary-color);
+  box-shadow: 0 0 10px var(--primary-color);
+}
+
+.tesla-overlay-container.high-contrast .ai-label,
+.tesla-overlay-container.high-contrast .confidence-value {
+  color: var(--primary-color);
+}
