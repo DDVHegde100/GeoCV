@@ -18,7 +18,8 @@ logger = logging.getLogger(__name__)
 class GameState:
     """Current state of a game session"""
     game_id: str
-    image_path: str
+    image_path: Optional[str]  # Can be None for Street View games
+    streetview_location: Optional[Dict]  # Street View location data
     ai_analysis: Optional[CVAnalysisResult]
     ai_guess: Optional[Tuple[float, float]]  # lat, lon
     human_guess: Optional[Tuple[float, float]]
@@ -28,6 +29,7 @@ class GameState:
     start_time: float
     status: str  # 'analyzing', 'waiting_human', 'completed'
     ai_confidence_display: str
+    difficulty: Optional[str] = None
 
 @dataclass 
 class GameResult:
@@ -58,7 +60,7 @@ class GameService:
     
     async def start_new_game(self, image_path: str, game_mode: str = 'classic', 
                             actual_location: Optional[Tuple[float, float]] = None) -> str:
-        """Start a new game session"""
+        """Start a new game session with uploaded image"""
         
         game_id = str(uuid.uuid4())
         
@@ -70,6 +72,7 @@ class GameService:
         game_state = GameState(
             game_id=game_id,
             image_path=image_path,
+            streetview_location=None,
             ai_analysis=None,
             ai_guess=None,
             human_guess=None,
@@ -87,6 +90,46 @@ class GameService:
         asyncio.create_task(self._run_ai_analysis(game_id))
         
         logger.info(f"Started new game: {game_id}, mode: {game_mode}")
+        return game_id
+    
+    async def start_streetview_game(self, streetview_location: Dict, game_mode: str = 'classic') -> str:
+        """Start a new game session with Street View location"""
+        
+        game_id = str(uuid.uuid4())
+        
+        # Validate game mode
+        if game_mode not in self.game_modes:
+            game_mode = 'classic'
+        
+        # Extract actual location from Street View data
+        actual_location = (
+            streetview_location['location']['lat'],
+            streetview_location['location']['lon']
+        )
+        
+        # Initialize game state
+        game_state = GameState(
+            game_id=game_id,
+            image_path=None,
+            streetview_location=streetview_location,
+            ai_analysis=None,
+            ai_guess=None,
+            human_guess=None,
+            actual_location=actual_location,
+            game_mode=game_mode,
+            time_limit=self.game_modes[game_mode]['time_limit'],
+            start_time=time.time(),
+            status='analyzing',
+            ai_confidence_display='Initializing Street View analysis...',
+            difficulty=streetview_location.get('metadata', {}).get('difficulty', 'medium')
+        )
+        
+        self.active_games[game_id] = game_state
+        
+        # Start AI analysis in background using Street View image
+        asyncio.create_task(self._run_streetview_analysis(game_id))
+        
+        logger.info(f"Started new Street View game: {game_id}, mode: {game_mode}")
         return game_id
     
     async def _run_ai_analysis(self, game_id: str):
@@ -143,6 +186,68 @@ class GameService:
             
         except Exception as e:
             logger.error(f"AI analysis failed for game {game_id}: {e}")
+            game_state.ai_confidence_display = f"❌ Analysis failed: {str(e)}"
+            game_state.status = 'error'
+    
+    async def _run_streetview_analysis(self, game_id: str):
+        """Run AI analysis for a Street View game"""
+        
+        game_state = self.active_games.get(game_id)
+        if not game_state or not game_state.streetview_location:
+            return
+        
+        try:
+            # Download Street View image for analysis
+            image_url = game_state.streetview_location.get('image_url')
+            if not image_url:
+                logger.error(f"No Street View image URL for game {game_id}")
+                game_state.status = 'error'
+                return
+            
+            # Update status messages during analysis
+            analysis_steps = [
+                "🌍 Loading Street View imagery...",
+                "🔍 Analyzing geographic visual cues...",
+                "🚗 Detecting regional vehicles and infrastructure...",
+                "🏢 Examining architectural patterns...",
+                "🌳 Analyzing climate and vegetation indicators...",
+                "📝 Processing visible text and signage...",
+                "🧠 Correlating features with geographic databases...",
+                "🎯 Calculating most probable location..."
+            ]
+            
+            for i, step in enumerate(analysis_steps):
+                game_state.ai_confidence_display = step
+                await asyncio.sleep(0.7)  # Slightly longer for Street View analysis
+            
+            # For now, simulate CV analysis on Street View image
+            # In a real implementation, this would download and process the image
+            game_state.ai_confidence_display = "🔬 Running computer vision analysis on Street View..."
+            
+            # Create mock analysis result based on actual location
+            actual_lat, actual_lon = game_state.actual_location
+            difficulty = game_state.streetview_location.get('metadata', {}).get('difficulty', 'medium')
+            
+            # Simulate analysis result with features that would be detected
+            mock_analysis = self._create_mock_analysis_result(actual_lat, actual_lon, difficulty)
+            game_state.ai_analysis = mock_analysis
+            
+            # Generate AI guess with appropriate difficulty-based accuracy
+            game_state.ai_confidence_display = "🤔 Making educated geographic prediction..."
+            await asyncio.sleep(1.0)
+            
+            ai_guess = self._generate_streetview_ai_guess(mock_analysis, difficulty)
+            game_state.ai_guess = ai_guess
+            
+            # Update final status
+            confidence_text = self._get_confidence_text(mock_analysis.confidence_level.value)
+            game_state.ai_confidence_display = f"✅ Street View analysis complete! {confidence_text}"
+            game_state.status = 'waiting_human'
+            
+            logger.info(f"Street View AI analysis completed for game {game_id}")
+            
+        except Exception as e:
+            logger.error(f"Street View AI analysis failed for game {game_id}: {e}")
             game_state.ai_confidence_display = f"❌ Analysis failed: {str(e)}"
             game_state.status = 'error'
     
@@ -340,8 +445,14 @@ class GameService:
             'game_mode': game_state.game_mode,
             'ai_confidence_display': game_state.ai_confidence_display,
             'time_limit': game_state.time_limit,
-            'elapsed_time': time.time() - game_state.start_time
+            'elapsed_time': time.time() - game_state.start_time,
+            'difficulty': game_state.difficulty,
+            'game_type': 'streetview' if game_state.streetview_location else 'upload'
         }
+        
+        # Add Street View location if available
+        if game_state.streetview_location:
+            state_dict['streetview_location'] = game_state.streetview_location
         
         # Add AI analysis details if available
         if game_state.ai_analysis:
@@ -386,3 +497,114 @@ class GameService:
             logger.info(f"Cleaned up inactive game: {game_id}")
         
         return len(inactive_games)
+    
+    def _create_mock_analysis_result(self, lat: float, lon: float, difficulty: str):
+        """Create mock CV analysis result based on known location"""
+        from app.core.cv_pipeline import CVAnalysisResult, ConfidenceLevel, DetectionResult
+        
+        # Create realistic detections based on geographic location
+        detections = []
+        
+        # Add mock detections based on location characteristics
+        if abs(lat) < 30:  # Tropical regions
+            detections.append(DetectionResult(
+                feature_type="vegetation",
+                confidence=0.8,
+                bounding_box=(100, 50, 200, 150),
+                metadata={"vegetation_type": "tropical", "coverage": 0.6},
+                geographic_hints=["tropical_region", "equatorial_climate"]
+            ))
+        
+        if abs(lat) > 50:  # Northern regions
+            detections.append(DetectionResult(
+                feature_type="architecture",
+                confidence=0.7,
+                bounding_box=(50, 100, 300, 200),
+                metadata={"building_type": "northern_style", "roof_type": "steep"},
+                geographic_hints=["northern_hemisphere", "cold_climate", "europe_or_canada"]
+            ))
+        
+        # Urban vs rural detection
+        if "urban" in difficulty or abs(lat - 40.7) < 1 and abs(lon + 74) < 1:  # NYC area
+            detections.append(DetectionResult(
+                feature_type="vehicle",
+                confidence=0.9,
+                bounding_box=(200, 300, 100, 80),
+                metadata={"vehicle_type": "yellow_taxi", "urban_density": "high"},
+                geographic_hints=["urban_center", "new_york", "north_america"]
+            ))
+        
+        # Determine confidence based on difficulty
+        confidence_map = {
+            "easy": 0.8,
+            "medium": 0.6,
+            "hard": 0.4,
+            "expert": 0.3
+        }
+        
+        overall_confidence = confidence_map.get(difficulty, 0.6)
+        
+        if overall_confidence > 0.7:
+            confidence_level = ConfidenceLevel.HIGH
+        elif overall_confidence > 0.5:
+            confidence_level = ConfidenceLevel.MEDIUM
+        else:
+            confidence_level = ConfidenceLevel.LOW
+        
+        # Aggregate geographic hints
+        all_hints = []
+        for detection in detections:
+            all_hints.extend(detection.geographic_hints)
+        
+        return CVAnalysisResult(
+            detections=detections,
+            overall_confidence=overall_confidence,
+            processing_time=2.5,
+            suggested_regions=list(set(all_hints))[:5],
+            confidence_level=confidence_level,
+            feature_summary={d.feature_type: 1 for d in detections}
+        )
+    
+    def _generate_streetview_ai_guess(self, analysis, difficulty: str) -> Tuple[float, float]:
+        """Generate AI guess for Street View games with difficulty-based accuracy"""
+        
+        # Base accuracy on difficulty level
+        accuracy_map = {
+            "easy": 50.0,      # Within 50km
+            "medium": 150.0,   # Within 150km
+            "hard": 500.0,     # Within 500km
+            "expert": 1500.0   # Within 1500km
+        }
+        
+        max_error_km = accuracy_map.get(difficulty, 150.0)
+        
+        # Use the standard guess generation but with difficulty-based error
+        suggested_regions = analysis.suggested_regions
+        confidence = analysis.overall_confidence
+        
+        # Start with some reasonable global location
+        lat, lon = 45.0, 10.0  # Central Europe as default
+        
+        # Adjust based on detected features
+        if 'tropical_region' in suggested_regions:
+            lat = self._add_noise(15.0, confidence)
+            lon = self._add_noise(-90.0, confidence)
+        elif 'northern_hemisphere' in suggested_regions:
+            lat = self._add_noise(55.0, confidence)
+            lon = self._add_noise(15.0, confidence)
+        elif 'urban_center' in suggested_regions:
+            # Major city locations
+            major_cities = [(40.7, -74), (51.5, -0.1), (48.9, 2.3), (35.7, 139.7)]
+            city_lat, city_lon = major_cities[hash(str(suggested_regions)) % len(major_cities)]
+            lat = self._add_noise(city_lat, confidence)
+            lon = self._add_noise(city_lon, confidence)
+        
+        # Apply difficulty-based final error
+        error_factor = max_error_km / 111.32  # Convert km to degrees (roughly)
+        final_lat_error = (hash(str(analysis.detections)) % 21 - 10) * error_factor / 10
+        final_lon_error = (hash(str(analysis.detections[::-1])) % 21 - 10) * error_factor / 10
+        
+        final_lat = max(-90, min(90, lat + final_lat_error))
+        final_lon = max(-180, min(180, lon + final_lon_error))
+        
+        return (final_lat, final_lon)

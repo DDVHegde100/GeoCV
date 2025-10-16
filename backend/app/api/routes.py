@@ -12,16 +12,19 @@ from pydantic import BaseModel
 
 # Import services (will be injected)
 from app.services.game_service import GameService
+from app.services.streetview_service import StreetViewService, LocationDifficulty
 
 router = APIRouter()
 
 # Global service instances (will be set in main.py)
 game_service: Optional[GameService] = None
+streetview_service: Optional[StreetViewService] = None
 
-def set_game_service(service: GameService):
-    """Set the game service instance"""
-    global game_service
-    game_service = service
+def set_services(game_svc: GameService, streetview_svc: StreetViewService):
+    """Set the service instances"""
+    global game_service, streetview_service
+    game_service = game_svc
+    streetview_service = streetview_svc
 
 # Pydantic models for request/response
 class StartGameRequest(BaseModel):
@@ -88,6 +91,65 @@ async def start_game(
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to start game: {str(e)}")
+
+@router.post("/games/start-streetview")
+async def start_streetview_game(
+    game_mode: str = Form("classic"),
+    difficulty: str = Form("medium"),
+    region: Optional[str] = Form(None)
+):
+    """Start a new game with a random Street View location"""
+    if not game_service or not streetview_service:
+        raise HTTPException(status_code=500, detail="Services not initialized")
+    
+    try:
+        # Get random Street View location
+        from app.services.streetview_service import LocationDifficulty
+        
+        try:
+            difficulty_enum = LocationDifficulty(difficulty.lower())
+        except ValueError:
+            difficulty_enum = LocationDifficulty.MEDIUM
+        
+        streetview_location = await streetview_service.get_random_location(
+            difficulty=difficulty_enum,
+            region_preference=region
+        )
+        
+        # Convert to dict format for game service
+        location_data = {
+            "location": {
+                "lat": streetview_location.lat,
+                "lon": streetview_location.lon,
+                "pano_id": streetview_location.pano_id,
+                "heading": streetview_location.heading,
+                "pitch": streetview_location.pitch,
+                "fov": streetview_location.fov
+            },
+            "metadata": {
+                "difficulty": streetview_location.difficulty.value,
+                "country": streetview_location.country,
+                "region": streetview_location.region,
+                "description": streetview_location.description
+            },
+            "image_url": streetview_location.image_url
+        }
+        
+        # Start the Street View game
+        game_id = await game_service.start_streetview_game(
+            streetview_location=location_data,
+            game_mode=game_mode
+        )
+        
+        return {
+            "game_id": game_id,
+            "streetview_location": location_data,
+            "status": "started",
+            "message": "Street View game started! AI is analyzing the location..."
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to start Street View game: {str(e)}")
 
 @router.get("/games/{game_id}/status")
 async def get_game_status(game_id: str):
@@ -225,7 +287,8 @@ async def get_system_stats():
     stats = {
         "active_games": len(game_service.active_games),
         "total_games_played": len(game_service.game_results),
-        "cv_pipeline_initialized": game_service.cv_pipeline.initialized
+        "cv_pipeline_initialized": game_service.cv_pipeline.initialized,
+        "streetview_initialized": streetview_service.initialized if streetview_service else False
     }
     
     if game_service.game_results:
@@ -244,3 +307,121 @@ async def get_system_stats():
         })
     
     return stats
+
+# Street View API endpoints
+@router.get("/streetview/random")
+async def get_random_streetview_location(
+    difficulty: str = "medium",
+    region: Optional[str] = None
+):
+    """Get a random Street View location for the game"""
+    if not streetview_service:
+        raise HTTPException(status_code=500, detail="Street View service not initialized")
+    
+    try:
+        # Parse difficulty
+        difficulty_enum = LocationDifficulty(difficulty.lower())
+    except ValueError:
+        difficulty_enum = LocationDifficulty.MEDIUM
+    
+    try:
+        location = await streetview_service.get_random_location(
+            difficulty=difficulty_enum,
+            region_preference=region
+        )
+        
+        return {
+            "location": {
+                "lat": location.lat,
+                "lon": location.lon,
+                "pano_id": location.pano_id,
+                "heading": location.heading,
+                "pitch": location.pitch,
+                "fov": location.fov
+            },
+            "metadata": {
+                "difficulty": location.difficulty.value,
+                "country": location.country,
+                "region": location.region,
+                "description": location.description
+            },
+            "image_url": location.image_url,
+            "status": "success"
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate location: {str(e)}")
+
+@router.get("/streetview/validate")
+async def validate_streetview_location(lat: float, lon: float):
+    """Validate if Street View is available at given coordinates"""
+    if not streetview_service:
+        raise HTTPException(status_code=500, detail="Street View service not initialized")
+    
+    try:
+        is_valid = await streetview_service.validate_location(lat, lon)
+        metadata = await streetview_service.get_streetview_metadata(lat, lon)
+        
+        return {
+            "valid": is_valid,
+            "metadata": metadata
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Validation failed: {str(e)}")
+
+@router.get("/streetview/image")
+async def get_streetview_image(
+    lat: float,
+    lon: float,
+    size: str = "640x640",
+    fov: int = 90,
+    heading: int = 0,
+    pitch: int = 0
+):
+    """Get Street View image URL for given parameters"""
+    if not streetview_service:
+        raise HTTPException(status_code=500, detail="Street View service not initialized")
+    
+    try:
+        image_url = streetview_service._generate_streetview_url(
+            lat=lat, lon=lon, size=size, fov=fov, heading=heading, pitch=pitch
+        )
+        
+        return {
+            "image_url": image_url,
+            "parameters": {
+                "lat": lat,
+                "lon": lon,
+                "size": size,
+                "fov": fov,
+                "heading": heading,
+                "pitch": pitch
+            }
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to generate image URL: {str(e)}")
+
+@router.get("/streetview/challenge")
+async def get_challenge_locations():
+    """Get curated challenge locations"""
+    if not streetview_service:
+        raise HTTPException(status_code=500, detail="Street View service not initialized")
+    
+    try:
+        locations = await streetview_service.get_curated_challenge_locations()
+        
+        return {
+            "locations": [
+                {
+                    "lat": loc.lat,
+                    "lon": loc.lon,
+                    "difficulty": loc.difficulty.value,
+                    "description": loc.description,
+                    "image_url": loc.image_url
+                }
+                for loc in locations
+            ],
+            "count": len(locations)
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get challenge locations: {str(e)}")

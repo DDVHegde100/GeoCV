@@ -5,9 +5,10 @@ import uvicorn
 import os
 from dotenv import load_dotenv
 
-from app.api.routes import router, set_game_service
+from app.api.routes import router, set_services
 from app.core.cv_pipeline import CVPipeline
 from app.services.game_service import GameService
+from app.services.streetview_service import StreetViewService
 
 # Load environment variables
 load_dotenv()
@@ -33,26 +34,33 @@ app.add_middleware(
 # Initialize global services
 cv_pipeline = None
 game_service = None
+streetview_service = None
 
 @app.on_event("startup")
 async def startup_event():
     """Initialize services on startup"""
-    global cv_pipeline, game_service
+    global cv_pipeline, game_service, streetview_service
     cv_pipeline = CVPipeline()
+    streetview_service = StreetViewService()
     game_service = GameService(cv_pipeline)
     
-    # Set the game service in routes module
-    set_game_service(game_service)
+    # Set the services in routes module
+    set_services(game_service, streetview_service)
     
-    # Warm up the CV pipeline
+    # Initialize services
     await cv_pipeline.initialize()
+    await streetview_service.initialize()
+    
     print("🤖 GeoCV AI initialized and ready!")
+    print("🌍 Street View service initialized!")
 
 @app.on_event("shutdown")
 async def shutdown_event():
     """Cleanup on shutdown"""
     if cv_pipeline:
         await cv_pipeline.cleanup()
+    if streetview_service:
+        await streetview_service.cleanup()
     print("👋 GeoCV AI shutting down...")
 
 # Include API routes
