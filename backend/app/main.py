@@ -7,10 +7,12 @@ import os
 from dotenv import load_dotenv
 
 from app.api.routes import router, set_services
+from app.api.geoguessr_routes import router as geoguessr_router, set_location_service
 from app.core.cv_pipeline import CVPipeline
 from app.services.game_service import GameService
 from app.services.streetview_service import StreetViewService
 from app.services.websocket_service import WebSocketService
+from app.services.random_location_service import RandomLocationService
 
 # Load environment variables
 load_dotenv()
@@ -29,6 +31,7 @@ async def lifespan(app: FastAPI):
     cv_pipeline = CVPipeline()
     streetview_service = StreetViewService()
     game_service = GameService(cv_pipeline)
+    location_service = RandomLocationService()
     
     # Set websocket service in both game service and CV pipeline for real-time updates
     game_service.set_websocket_service(websocket_service)
@@ -36,6 +39,7 @@ async def lifespan(app: FastAPI):
     
     # Set the services in routes module (including websocket service)
     set_services(game_service, streetview_service, websocket_service)
+    set_location_service(location_service)
     
     # Initialize services
     await cv_pipeline.initialize()
@@ -73,6 +77,7 @@ app.add_middleware(
 
 # Include API routes first
 app.include_router(router, prefix="/api/v1")
+app.include_router(geoguessr_router, prefix="/api/v1")
 
 # Attach WebSocket service to app (this modifies the app object)
 # Temporarily disabled due to compatibility issues
