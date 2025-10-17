@@ -13,6 +13,7 @@ import uuid
 from app.services.random_location_service import RandomLocationService
 from app.services.opencv_analysis_service import OpenCVAnalysisService
 from app.services.ai_guesser_service import AIGuesserService
+from app.services.competition_scoring_service import CompetitionScoringService
 
 router = APIRouter()
 
@@ -20,6 +21,7 @@ router = APIRouter()
 location_service: Optional[RandomLocationService] = None
 cv_service = OpenCVAnalysisService()
 ai_guesser = AIGuesserService()
+scoring_service = CompetitionScoringService()
 
 def set_location_service(loc_service: RandomLocationService):
     """Set the location service instance"""
@@ -46,6 +48,16 @@ class AnalysisRequest(BaseModel):
 class AIGuessRequest(BaseModel):
     cv_analysis: Dict[str, Any]
     time_elapsed: int = 0
+
+class RoundScoringRequest(BaseModel):
+    actual_location: Dict[str, float]
+    human_guess: Optional[Dict[str, float]] = None
+    ai_guess: Optional[Dict[str, Any]] = None
+    round_number: int
+    time_taken: int = 30
+
+class GameSummaryRequest(BaseModel):
+    round_results: List[Dict[str, Any]]
 
 @router.post("/geoguessr/new-location")
 async def get_new_location(request: NewLocationRequest) -> LocationResponse:
@@ -107,6 +119,41 @@ async def generate_ai_guess(request: AIGuessRequest) -> Dict[str, Any]:
         return ai_guess
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"AI guess generation failed: {str(e)}")
+
+@router.post("/geoguessr/score-round")
+async def score_round(request: RoundScoringRequest) -> Dict[str, Any]:
+    """Score a round with human and AI guesses"""
+    try:
+        round_data = {
+            'actual_location': request.actual_location,
+            'human_guess': request.human_guess,
+            'ai_guess': request.ai_guess,
+            'round_number': request.round_number,
+            'time_taken': request.time_taken
+        }
+        
+        result = await scoring_service.score_round(round_data)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Round scoring failed: {str(e)}")
+
+@router.post("/geoguessr/game-summary")
+async def calculate_game_summary(request: GameSummaryRequest) -> Dict[str, Any]:
+    """Calculate final game summary and winner"""
+    try:
+        summary = await scoring_service.calculate_game_summary(request.round_results)
+        return summary
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Game summary calculation failed: {str(e)}")
+
+@router.get("/geoguessr/score-breakdown/{distance}")
+async def get_score_breakdown(distance: float) -> Dict[str, Any]:
+    """Get detailed score breakdown for a given distance"""
+    try:
+        breakdown = scoring_service.get_score_breakdown(distance)
+        return breakdown
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Score breakdown failed: {str(e)}")
 
 @router.get("/geoguessr/validate-location/{location_id}")
 async def validate_location(location_id: str):
