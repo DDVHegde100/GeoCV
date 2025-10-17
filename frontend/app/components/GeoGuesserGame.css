@@ -1,0 +1,146 @@
+/* GeoGuessr Game Styles */
+.geoguessr-game {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  color: white;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+.game-header {
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid rgba(76, 205, 196, 0.3);
+}
+
+.game-info h1 {
+  margin: 0;
+  font-size: 1.8rem;
+  font-weight: 700;
+  background: linear-gradient(45deg, #4ECDC4, #44A08D);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.round-info {
+  font-size: 1.1rem;
+  color: #a0a0a0;
+  margin-top: 5px;
+}
+
+.timer {
+  font-size: 2rem;
+  font-weight: bold;
+  color: #FF6B6B;
+  margin-top: 10px;
+}
+
+.scores {
+  display: flex;
+  gap: 30px;
+}
+
+.score {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.human-score {
+  background: rgba(76, 205, 196, 0.2);
+  border: 1px solid #4ECDC4;
+}
+
+.ai-score {
+  background: rgba(255, 107, 107, 0.2);
+  border: 1px solid #FF6B6B;
+}
+
+.start-screen {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 70vh;
+}
+
+.start-button {
+  padding: 20px 40px;
+  font-size: 1.5rem;
+  font-weight: bold;
+  background: linear-gradient(45deg, #4ECDC4, #44A08D);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.2s;
+}
+
+.start-button:hover {
+  transform: translateY(-2px);
+}
+
+.game-content {
+  padding: 20px;
+}
+
+.street-view-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  height: 70vh;
+  margin-bottom: 20px;
+}
+
+.ai-view, .human-view {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  padding: 20px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.ai-view h3 {
+  color: #FF6B6B;
+  margin-top: 0;
+}
+
+.human-view h3 {
+  color: #4ECDC4;
+  margin-top: 0;
+}
+
+.cv-overlay-panel, .street-view-panel {
+  height: calc(100% - 50px);
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.guess-panel {
+  text-align: center;
+  padding: 20px;
+}
+
+.guess-panel button {
+  padding: 15px 30px;
+  font-size: 1.2rem;
+  background: #4ECDC4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.guess-panel button:hover:not(:disabled) {
+  background: #44A08D;
+}
+
+.guess-panel button:disabled {
+  background: #666;
+  cursor: not-allowed;
+}

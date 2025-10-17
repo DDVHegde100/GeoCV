@@ -349,24 +349,32 @@ const AIvsHumanInterface: React.FC = () => {
 
               {gameState.streetview_location && (
                 <div className="streetview-container">
-                  {/* Interactive Google Street View for Human */}
-                  <iframe
-                    className="streetview-iframe"
-                    title="Interactive Street View"
-                    src={`https://www.google.com/maps/embed/v1/streetview?location=${gameState.streetview_location.lat},${gameState.streetview_location.lon}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&fov=90&heading=0&pitch=0`}
-                    allowFullScreen
-                  ></iframe>
+                  {/* Development Mode: Use alternative map view */}
+                  <div className="dev-streetview-container">
+                    <iframe
+                      className="streetview-iframe"
+                      title="Location View"
+                      src={`https://www.openstreetmap.org/export/embed.html?bbox=${gameState.streetview_location.lon-0.01},${gameState.streetview_location.lat-0.01},${gameState.streetview_location.lon+0.01},${gameState.streetview_location.lat+0.01}&layer=mapnik&marker=${gameState.streetview_location.lat},${gameState.streetview_location.lon}`}
+                      allowFullScreen
+                    ></iframe>
+                    
+                    <div className="location-info">
+                      <p>📍 Location: {gameState.streetview_location.lat.toFixed(4)}, {gameState.streetview_location.lon.toFixed(4)}</p>
+                      <p>🎯 Your task: Guess where this is!</p>
+                      <p className="dev-note">💡 Dev Mode: Using OpenStreetMap while Google Maps API is being configured</p>
+                    </div>
+                  </div>
                   
-                  {/* Fallback static image if needed */}
+                  {/* Fallback static image if available */}
                   <div className="streetview-fallback">
                     <img 
                       className="streetview-image"
                       src={gameState.streetview_location.street_view_urls?.[0]?.url ||
-                           `https://maps.googleapis.com/maps/api/streetview?size=640x640&location=${gameState.streetview_location.lat},${gameState.streetview_location.lon}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
-                      alt="Street View"
+                           `https://picsum.photos/640/640?random=${Math.floor(Math.random() * 1000)}`}
+                      alt="Location View"
                       onError={(e) => {
-                        console.log('Street View image failed to load');
-                        e.currentTarget.style.display = 'none';
+                        console.log('Street View image failed to load, using placeholder');
+                        e.currentTarget.src = `https://picsum.photos/640/640?random=${Math.floor(Math.random() * 1000)}`;
                       }}
                     />
                   </div>

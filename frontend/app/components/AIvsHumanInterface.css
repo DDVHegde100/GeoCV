@@ -576,11 +576,38 @@
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 }
 
-.streetview-iframe {
+.dev-streetview-container {
   width: 100%;
   height: 100%;
+  position: relative;
+}
+
+.streetview-iframe {
+  width: 100%;
+  height: 70%;
   border: none;
   border-radius: 8px;
+}
+
+.location-info {
+  padding: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  color: white;
+  font-size: 0.9rem;
+  height: 30%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.location-info p {
+  margin: 2px 0;
+}
+
+.dev-note {
+  color: #4ECDC4;
+  font-style: italic;
+  font-size: 0.8rem;
 }
 
 .streetview-fallback {
