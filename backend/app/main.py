@@ -30,8 +30,9 @@ async def lifespan(app: FastAPI):
     streetview_service = StreetViewService()
     game_service = GameService(cv_pipeline)
     
-    # Set websocket service in game service for real-time updates
+    # Set websocket service in both game service and CV pipeline for real-time updates
     game_service.set_websocket_service(websocket_service)
+    cv_pipeline.set_websocket_service(websocket_service)
     
     # Set the services in routes module (including websocket service)
     set_services(game_service, streetview_service, websocket_service)
@@ -74,7 +75,8 @@ app.add_middleware(
 app.include_router(router, prefix="/api/v1")
 
 # Attach WebSocket service to app (this modifies the app object)
-app = websocket_service.attach_to_app(app)
+# Temporarily disabled due to compatibility issues
+# app = websocket_service.attach_to_app(app)
 
 # Development server configuration
 if __name__ == "__main__":

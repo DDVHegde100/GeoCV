@@ -51,6 +51,7 @@ class CVPipeline:
         self.cascade_classifiers = {}
         self.feature_extractors = {}
         self.background_subtractor = None
+        self.websocket_service = None  # Will be set later
         
         # Initialize detection thresholds
         self.thresholds = {
@@ -81,6 +82,10 @@ class CVPipeline:
         except Exception as e:
             logger.error(f"Failed to initialize CV pipeline: {e}")
             raise
+    
+    def set_websocket_service(self, websocket_service):
+        """Set the websocket service for real-time updates"""
+        self.websocket_service = websocket_service
     
     async def _load_cascade_classifiers(self):
         """Load OpenCV cascade classifiers for object detection"""

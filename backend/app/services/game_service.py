@@ -720,13 +720,15 @@ class GameService:
             game_state.ai_confidence_display = "🔬 Running enhanced computer vision analysis..."
             
             # Get the Street View URLs for multi-directional analysis
-            street_view_urls = game_state.streetview_location.get("street_view_urls", {})
+            street_view_urls = game_state.streetview_location.get("street_view_urls", [])
+            
+            # Extract URLs from the Street View data structure
+            image_urls = []
+            if isinstance(street_view_urls, list):
+                image_urls = [item.get("url") for item in street_view_urls if item.get("url")]
             
             # Run the enhanced CV pipeline with overlays
-            analysis_result = await self.cv_pipeline.analyze_streetview_with_overlays(
-                street_view_urls=street_view_urls,
-                location=(game_state.actual_location[0], game_state.actual_location[1])
-            )
+            analysis_result = await self.cv_pipeline.analyze_streetview_with_overlays(image_urls)
             
             game_state.ai_analysis = analysis_result
             

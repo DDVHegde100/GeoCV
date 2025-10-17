@@ -565,3 +565,33 @@
     gap: 12px;
   }
 }
+
+/* Street View Containers */
+.streetview-container {
+  width: 100%;
+  height: 400px;
+  position: relative;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.streetview-iframe {
+  width: 100%;
+  height: 100%;
+  border: none;
+  border-radius: 8px;
+}
+
+.streetview-fallback {
+  width: 100%;
+  height: 100%;
+  display: none;
+}
+
+.streetview-image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 8px;
+}

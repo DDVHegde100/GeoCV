@@ -84,7 +84,7 @@ export default function Home() {
         formData.append('actual_lon', actualLocation.lon.toString());
       }
 
-      const response = await axios.post('http://localhost:8000/api/v1/games/start', formData, {
+      const response = await axios.post('http://localhost:8001/api/v1/games/start', formData, {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
@@ -102,7 +102,7 @@ export default function Home() {
   const handleStartStreetViewGame = async () => {
     setIsStarting(true);
     try {
-      const response = await axios.post('http://localhost:8000/api/v1/games/start-streetview', {
+      const response = await axios.post('http://localhost:8001/api/v1/games/start-streetview', {
         difficulty: 'medium' // Default to medium difficulty
       });
 

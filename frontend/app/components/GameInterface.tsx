@@ -81,7 +81,7 @@ export default function GameInterface({ gameId, imageFile, onGameEnd }: GameInte
     // Fallback to polling when WebSocket is not available
     const pollGameState = async () => {
       try {
-        const response = await fetch(`http://localhost:8000/api/v1/games/${gameId}/status`);
+        const response = await fetch(`http://localhost:8001/api/v1/games/${gameId}/status`);
         if (response.ok) {
           const state = await response.json();
           setGameState(state);
@@ -102,7 +102,7 @@ export default function GameInterface({ gameId, imageFile, onGameEnd }: GameInte
 
     setIsSubmitting(true);
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/games/${gameId}/guess`, {
+      const response = await fetch(`http://localhost:8001/api/v1/games/${gameId}/guess`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

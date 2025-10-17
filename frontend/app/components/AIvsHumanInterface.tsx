@@ -78,7 +78,7 @@ const AIvsHumanInterface: React.FC = () => {
       setIsPollingOverlays(true);
       intervalId = setInterval(async () => {
         try {
-          const response = await fetch(`http://localhost:8000/api/v1/games/${gameState.game_id}/live-overlays`);
+          const response = await fetch(`http://localhost:8001/api/v1/games/${gameState.game_id}/live-overlays`);
           if (response.ok) {
             const overlayResponse = await response.json();
             if (overlayResponse.overlays) {
@@ -114,7 +114,7 @@ const AIvsHumanInterface: React.FC = () => {
       const formData = new FormData();
       formData.append('difficulty', difficulty);
       
-      const response = await fetch('http://localhost:8000/api/v1/games/ai-vs-human', {
+      const response = await fetch('http://localhost:8001/api/v1/games/ai-vs-human', {
         method: 'POST',
         body: formData,
       });
@@ -154,7 +154,7 @@ const AIvsHumanInterface: React.FC = () => {
     if (!gameState || !humanGuess) return;
 
     try {
-      const response = await fetch(`http://localhost:8000/api/v1/games/${gameState.game_id}/guess`, {
+      const response = await fetch(`http://localhost:8001/api/v1/games/${gameState.game_id}/guess`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -310,8 +310,7 @@ const AIvsHumanInterface: React.FC = () => {
 
               {gameState.streetview_location && (
                 <TeslaStyleOverlay
-                  imageUrl={gameState.streetview_location.street_view_urls?.north || 
-                           gameState.streetview_location.image_url ||
+                  imageUrl={gameState.streetview_location.street_view_urls?.[0]?.url || 
                            `https://maps.googleapis.com/maps/api/streetview?size=640x640&location=${gameState.streetview_location.lat},${gameState.streetview_location.lon}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
                   overlayData={teslaOverlayData}
                   isAnalyzing={gameState.status === 'analyzing'}
@@ -349,14 +348,29 @@ const AIvsHumanInterface: React.FC = () => {
               </div>
 
               {gameState.streetview_location && (
-                <StreetViewPlayer
-                  location={{
-                    lat: gameState.streetview_location.lat,
-                    lon: gameState.streetview_location.lon
-                  }}
-                  onLocationGuess={setHumanGuess}
-                  disabled={gameState.status !== 'waiting_human'}
-                />
+                <div className="streetview-container">
+                  {/* Interactive Google Street View for Human */}
+                  <iframe
+                    className="streetview-iframe"
+                    title="Interactive Street View"
+                    src={`https://www.google.com/maps/embed/v1/streetview?location=${gameState.streetview_location.lat},${gameState.streetview_location.lon}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}&fov=90&heading=0&pitch=0`}
+                    allowFullScreen
+                  ></iframe>
+                  
+                  {/* Fallback static image if needed */}
+                  <div className="streetview-fallback">
+                    <img 
+                      className="streetview-image"
+                      src={gameState.streetview_location.street_view_urls?.[0]?.url ||
+                           `https://maps.googleapis.com/maps/api/streetview?size=640x640&location=${gameState.streetview_location.lat},${gameState.streetview_location.lon}&key=${process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY}`}
+                      alt="Street View"
+                      onError={(e) => {
+                        console.log('Street View image failed to load');
+                        e.currentTarget.style.display = 'none';
+                      }}
+                    />
+                  </div>
+                </div>
               )}
 
               {gameState.status === 'waiting_human' && (
