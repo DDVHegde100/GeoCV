@@ -12,12 +12,14 @@ import uuid
 # Import existing services
 from app.services.random_location_service import RandomLocationService
 from app.services.opencv_analysis_service import OpenCVAnalysisService
+from app.services.ai_guesser_service import AIGuesserService
 
 router = APIRouter()
 
 # Global services
 location_service: Optional[RandomLocationService] = None
 cv_service = OpenCVAnalysisService()
+ai_guesser = AIGuesserService()
 
 def set_location_service(loc_service: RandomLocationService):
     """Set the location service instance"""
@@ -40,6 +42,10 @@ class AnalysisRequest(BaseModel):
     image_url: str
     location: Dict[str, float]
     view: Dict[str, float]
+
+class AIGuessRequest(BaseModel):
+    cv_analysis: Dict[str, Any]
+    time_elapsed: int = 0
 
 @router.post("/geoguessr/new-location")
 async def get_new_location(request: NewLocationRequest) -> LocationResponse:
@@ -88,6 +94,19 @@ async def analyze_view(request: AnalysisRequest) -> Dict[str, Any]:
         return analysis
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+@router.post("/geoguessr/ai-guess")
+async def generate_ai_guess(request: AIGuessRequest) -> Dict[str, Any]:
+    """Generate AI guess based on CV analysis"""
+    try:
+        ai_guess = await ai_guesser.generate_guess(
+            request.cv_analysis,
+            request.time_elapsed
+        )
+        
+        return ai_guess
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI guess generation failed: {str(e)}")
 
 @router.get("/geoguessr/validate-location/{location_id}")
 async def validate_location(location_id: str):

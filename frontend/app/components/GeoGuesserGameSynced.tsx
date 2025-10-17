@@ -34,6 +34,15 @@ interface ViewState {
   position?: google.maps.LatLng;
 }
 
+interface AIGuess {
+  lat: number;
+  lon: number;
+  confidence: number;
+  reasoning: string;
+  analysis_quality: string;
+  time_taken: number;
+}
+
 const GeoGuesserGame: React.FC = () => {
   // Game state
   const [gameState, setGameState] = useState<GameState>({
@@ -52,6 +61,10 @@ const GeoGuesserGame: React.FC = () => {
     heading: 0,
     pitch: 0
   });
+
+  // AI and human guesses
+  const [aiGuess, setAIGuess] = useState<AIGuess | null>(null);
+  const [humanGuess, setHumanGuess] = useState<{ lat: number; lon: number } | null>(null);
 
   // Game mechanics
   const [isLoading, setIsLoading] = useState(false);
@@ -162,7 +175,9 @@ const GeoGuesserGame: React.FC = () => {
   const handleGuessSubmit = (guessLat: number, guessLon: number) => {
     if (!currentLocation || !gameState.isActive) return;
 
-    // Calculate distance and score
+    setHumanGuess({ lat: guessLat, lon: guessLon });
+
+    // Calculate distance and score for human
     const distance = calculateDistance(
       currentLocation.lat, 
       currentLocation.lon, 
@@ -188,6 +203,11 @@ const GeoGuesserGame: React.FC = () => {
     }, 3000);
   };
 
+  const handleAIGuess = (guess: AIGuess) => {
+    setAIGuess(guess);
+    console.log('AI Guess received:', guess);
+  };
+
   const nextRound = () => {
     if (gameState.currentRound < gameState.totalRounds) {
       setGameState(prev => ({
@@ -196,6 +216,11 @@ const GeoGuesserGame: React.FC = () => {
         timeRemaining: 30,
         isActive: true
       }));
+      
+      // Reset guesses for new round
+      setAIGuess(null);
+      setHumanGuess(null);
+      
       loadNewLocation();
     } else {
       endGame();
@@ -305,6 +330,8 @@ const GeoGuesserGame: React.FC = () => {
                   // Handle AI analysis updates here
                   console.log('AI Analysis:', analysis);
                 }}
+                onAIGuess={handleAIGuess}
+                gameActive={gameState.isActive}
               />
             </div>
           </div>

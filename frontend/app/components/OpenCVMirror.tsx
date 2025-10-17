@@ -24,6 +24,15 @@ interface CVAnalysisData {
   timestamp: number;
 }
 
+interface AIGuess {
+  lat: number;
+  lon: number;
+  confidence: number;
+  reasoning: string;
+  analysis_quality: string;
+  time_taken: number;
+}
+
 interface OpenCVMirrorProps {
   location: {
     lat: number;
@@ -34,6 +43,8 @@ interface OpenCVMirrorProps {
     pitch: number;
   };
   onAnalysisUpdate?: (analysis: CVAnalysisData) => void;
+  onAIGuess?: (guess: AIGuess) => void;
+  gameActive?: boolean;
   className?: string;
 }
 
@@ -41,12 +52,16 @@ const OpenCVMirror: React.FC<OpenCVMirrorProps> = ({
   location, 
   currentView, 
   onAnalysisUpdate,
+  onAIGuess,
+  gameActive = false,
   className = '' 
 }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<HTMLImageElement>(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysisData, setAnalysisData] = useState<CVAnalysisData | null>(null);
+  const [aiGuess, setAiGuess] = useState<AIGuess | null>(null);
+  const [analysisStartTime, setAnalysisStartTime] = useState<number>(Date.now());
 
   // Color mapping for different object types
   const colorMap: Record<string, string> = {
@@ -61,9 +76,45 @@ const OpenCVMirror: React.FC<OpenCVMirrorProps> = ({
 
   useEffect(() => {
     if (location && currentView) {
+      setAnalysisStartTime(Date.now());
       analyzeCurrentView();
     }
   }, [location, currentView]);
+
+  useEffect(() => {
+    // Generate AI guess when analysis is complete and game is active
+    if (analysisData && gameActive && !aiGuess) {
+      generateAIGuess();
+    }
+  }, [analysisData, gameActive]);
+
+  const generateAIGuess = async () => {
+    if (!analysisData) return;
+    
+    try {
+      const timeElapsed = Math.floor((Date.now() - analysisStartTime) / 1000);
+      
+      const response = await fetch('http://localhost:8001/geoguessr/ai-guess', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          cv_analysis: analysisData,
+          time_elapsed: timeElapsed
+        })
+      });
+      
+      if (response.ok) {
+        const guess: AIGuess = await response.json();
+        setAiGuess(guess);
+        
+        if (onAIGuess) {
+          onAIGuess(guess);
+        }
+      }
+    } catch (error) {
+      console.error('AI guess generation failed:', error);
+    }
+  };
 
   const analyzeCurrentView = async () => {
     if (!location) return;
@@ -237,6 +288,26 @@ const OpenCVMirror: React.FC<OpenCVMirrorProps> = ({
               {analysisData.geographical_hints.map((hint, index) => (
                 <div key={index} className="hint-item">{hint}</div>
               ))}
+            </div>
+          )}
+          
+          {aiGuess && gameActive && (
+            <div className="ai-guess-section">
+              <h5>🤖 AI Guess:</h5>
+              <div className="ai-guess-details">
+                <div className="guess-coordinates">
+                  📍 {aiGuess.lat.toFixed(4)}, {aiGuess.lon.toFixed(4)}
+                </div>
+                <div className="guess-confidence">
+                  🎯 Confidence: {(aiGuess.confidence * 100).toFixed(0)}%
+                </div>
+                <div className="guess-reasoning">
+                  {aiGuess.reasoning}
+                </div>
+                <div className="analysis-quality">
+                  Quality: {aiGuess.analysis_quality}
+                </div>
+              </div>
             </div>
           )}
         </div>
