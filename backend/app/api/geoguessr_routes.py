@@ -5,17 +5,19 @@ Clean implementation for location generation and game management
 
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Any
 import random
 import uuid
 
 # Import existing services
 from app.services.random_location_service import RandomLocationService
+from app.services.opencv_analysis_service import OpenCVAnalysisService
 
 router = APIRouter()
 
 # Global services
 location_service: Optional[RandomLocationService] = None
+cv_service = OpenCVAnalysisService()
 
 def set_location_service(loc_service: RandomLocationService):
     """Set the location service instance"""
@@ -33,6 +35,11 @@ class LocationResponse(BaseModel):
     city: str
     street_view_url: str
     metadata: Dict
+
+class AnalysisRequest(BaseModel):
+    image_url: str
+    location: Dict[str, float]
+    view: Dict[str, float]
 
 @router.post("/geoguessr/new-location")
 async def get_new_location(request: NewLocationRequest) -> LocationResponse:
@@ -67,6 +74,20 @@ async def get_new_location(request: NewLocationRequest) -> LocationResponse:
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to generate location: {str(e)}")
+
+@router.post("/geoguessr/analyze-view")
+async def analyze_view(request: AnalysisRequest) -> Dict[str, Any]:
+    """Analyze Street View image with OpenCV"""
+    try:
+        analysis = await cv_service.analyze_street_view(
+            request.image_url,
+            request.location,
+            request.view
+        )
+        
+        return analysis
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 @router.get("/geoguessr/validate-location/{location_id}")
 async def validate_location(location_id: str):

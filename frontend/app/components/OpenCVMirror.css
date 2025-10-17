@@ -1,0 +1,152 @@
+/* OpenCV Mirror View Styles */
+
+.opencv-mirror {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+  border-radius: 10px;
+  overflow: hidden;
+  position: relative;
+}
+
+.analysis-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 2px solid #4ECDC4;
+}
+
+.analysis-header h4 {
+  margin: 0;
+  color: #4ECDC4;
+  font-weight: 600;
+  font-size: 18px;
+}
+
+.analysis-status {
+  padding: 5px 12px;
+  border-radius: 15px;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+}
+
+.analysis-status.analyzing {
+  background: #FF9F43;
+  color: white;
+  animation: pulse 1.5s infinite;
+}
+
+.analysis-status.idle {
+  background: #95E1D3;
+  color: #1e3c72;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+.mirror-container {
+  flex: 1;
+  position: relative;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 20px;
+}
+
+.cv-canvas {
+  max-width: 100%;
+  max-height: 100%;
+  border-radius: 8px;
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease;
+}
+
+.cv-canvas:hover {
+  transform: scale(1.02);
+}
+
+.hidden-image {
+  display: none;
+}
+
+.analysis-sidebar {
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.4);
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.analysis-sidebar h5 {
+  margin: 0 0 10px 0;
+  color: #4ECDC4;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.object-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  margin-bottom: 15px;
+}
+
+.object-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  font-size: 12px;
+  color: white;
+}
+
+.object-color {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.confidence {
+  margin-left: auto;
+  font-weight: 600;
+  color: #95E1D3;
+}
+
+.geo-hints {
+  margin-top: 10px;
+}
+
+.hint-item {
+  padding: 5px 8px;
+  margin: 3px 0;
+  background: rgba(78, 205, 196, 0.2);
+  border-left: 3px solid #4ECDC4;
+  border-radius: 3px;
+  font-size: 11px;
+  color: #E8F6F3;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .analysis-sidebar {
+    max-height: 150px;
+    padding: 15px;
+  }
+  
+  .mirror-container {
+    padding: 15px;
+  }
+  
+  .analysis-header {
+    padding: 10px 15px;
+  }
+}
