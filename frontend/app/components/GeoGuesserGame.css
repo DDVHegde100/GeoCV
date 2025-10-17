@@ -1,146 +1,232 @@
 /* GeoGuessr Game Styles */
+/* GeoGuessr Game Styles */
+
 .geoguessr-game {
   min-height: 100vh;
-  background: linear-gradient(135deg, #1a1a2e, #16213e);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
-  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 
 .game-header {
-  padding: 20px;
-  background: rgba(0, 0, 0, 0.3);
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid rgba(76, 205, 196, 0.3);
+  padding: 20px 40px;
+  background: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .game-info h1 {
   margin: 0;
-  font-size: 1.8rem;
+  font-size: 28px;
   font-weight: 700;
   background: linear-gradient(45deg, #4ECDC4, #44A08D);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
+  background-clip: text;
 }
 
-.round-info {
-  font-size: 1.1rem;
-  color: #a0a0a0;
-  margin-top: 5px;
+.game-stats {
+  display: flex;
+  gap: 30px;
+  margin-top: 10px;
+  font-size: 16px;
+}
+
+.round-counter, .score {
+  padding: 5px 15px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  font-weight: 600;
 }
 
 .timer {
-  font-size: 2rem;
-  font-weight: bold;
-  color: #FF6B6B;
-  margin-top: 10px;
+  padding: 5px 15px;
+  background: rgba(78, 205, 196, 0.3);
+  border-radius: 20px;
+  font-weight: 600;
+  transition: all 0.3s ease;
 }
 
-.scores {
-  display: flex;
-  gap: 30px;
+.timer.warning {
+  background: rgba(255, 107, 107, 0.7);
+  animation: pulse 1s infinite;
 }
 
-.score {
-  padding: 10px 20px;
-  border-radius: 8px;
-  font-weight: bold;
-  font-size: 1.2rem;
-}
-
-.human-score {
-  background: rgba(76, 205, 196, 0.2);
-  border: 1px solid #4ECDC4;
-}
-
-.ai-score {
-  background: rgba(255, 107, 107, 0.2);
-  border: 1px solid #FF6B6B;
-}
-
-.start-screen {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 70vh;
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 .start-button {
-  padding: 20px 40px;
-  font-size: 1.5rem;
-  font-weight: bold;
+  padding: 12px 30px;
   background: linear-gradient(45deg, #4ECDC4, #44A08D);
-  color: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 25px;
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
   cursor: pointer;
-  transition: transform 0.2s;
+  transition: all 0.3s ease;
 }
 
-.start-button:hover {
+.start-button:hover:not(:disabled) {
   transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(78, 205, 196, 0.4);
 }
 
-.game-content {
+.start-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.game-message {
+  text-align: center;
   padding: 20px;
-}
-
-.street-view-container {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 20px;
-  height: 70vh;
+  font-size: 18px;
+  font-weight: 500;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  margin: 0 40px;
+  border-radius: 10px;
   margin-bottom: 20px;
 }
 
-.ai-view, .human-view {
+/* Dual Panel Layout */
+.dual-panel-container {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
+  padding: 0 40px;
+  height: calc(100vh - 300px);
+}
+
+.panel {
   background: rgba(0, 0, 0, 0.2);
-  border-radius: 12px;
-  padding: 20px;
+  border-radius: 15px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  backdrop-filter: blur(10px);
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.ai-view h3 {
-  color: #FF6B6B;
-  margin-top: 0;
+.human-panel {
+  border-left: 3px solid #4ECDC4;
 }
 
-.human-view h3 {
-  color: #4ECDC4;
-  margin-top: 0;
+.ai-panel {
+  border-left: 3px solid #FF6B6B;
 }
 
-.cv-overlay-panel, .street-view-panel {
-  height: calc(100% - 50px);
-  background: rgba(0, 0, 0, 0.1);
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.guess-panel {
-  text-align: center;
+.panel-header {
   padding: 20px;
+  background: rgba(0, 0, 0, 0.3);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
 }
 
-.guess-panel button {
-  padding: 15px 30px;
-  font-size: 1.2rem;
-  background: #4ECDC4;
-  color: white;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  transition: background 0.2s;
+.panel-header h3 {
+  margin: 0 0 5px 0;
+  font-size: 20px;
+  font-weight: 600;
 }
 
-.guess-panel button:hover:not(:disabled) {
-  background: #44A08D;
+.panel-header p {
+  margin: 0;
+  font-size: 14px;
+  opacity: 0.8;
 }
 
-.guess-panel button:disabled {
-  background: #666;
-  cursor: not-allowed;
+.panel-content {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Street View specific styles */
+.street-view-panorama {
+  width: 100%;
+  height: 100%;
+}
+
+.street-view-loading {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  padding: 20px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 10px;
+  text-align: center;
+}
+
+/* Round Scores */
+.round-scores {
+  padding: 20px 40px;
+  background: rgba(0, 0, 0, 0.1);
+  backdrop-filter: blur(5px);
+  border-radius: 10px;
+  margin: 20px 40px 0;
+}
+
+.round-scores h4 {
+  margin: 0 0 10px 0;
+  color: #4ECDC4;
+}
+
+.scores-list {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.round-score {
+  padding: 5px 12px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 15px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+/* Responsive Design */
+@media (max-width: 1200px) {
+  .dual-panel-container {
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr 1fr;
+    height: auto;
+  }
+  
+  .panel {
+    min-height: 400px;
+  }
+}
+
+@media (max-width: 768px) {
+  .game-header {
+    padding: 15px 20px;
+    flex-direction: column;
+    gap: 15px;
+  }
+  
+  .game-stats {
+    gap: 15px;
+    font-size: 14px;
+  }
+  
+  .dual-panel-container {
+    padding: 0 20px;
+    gap: 15px;
+  }
+  
+  .game-message {
+    margin: 0 20px 15px;
+    font-size: 16px;
+  }
+  
+  .round-scores {
+    margin: 15px 20px 0;
+    padding: 15px 20px;
+  }
 }

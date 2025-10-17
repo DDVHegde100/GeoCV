@@ -12,7 +12,9 @@ interface StreetViewProps {
     lat: number;
     lon: number;
   };
-  onViewChange?: (position: google.maps.LatLng, pov: google.maps.StreetViewPov) => void;
+  onViewChange?: (view: { heading: number; pitch: number; position?: google.maps.LatLng }) => void;
+  onGuessSubmit?: (lat: number, lon: number) => void;
+  gameActive?: boolean;
   className?: string;
 }
 
@@ -23,7 +25,13 @@ declare global {
   }
 }
 
-const StreetView: React.FC<StreetViewProps> = ({ location, onViewChange, className = '' }) => {
+const StreetView: React.FC<StreetViewProps> = ({ 
+  location, 
+  onViewChange, 
+  onGuessSubmit, 
+  gameActive = false, 
+  className = '' 
+}) => {
   const streetViewRef = useRef<HTMLDivElement>(null);
   const panoramaRef = useRef<google.maps.StreetViewPanorama | null>(null);
   const [isLoaded, setIsLoaded] = useState(false);
@@ -93,7 +101,11 @@ const StreetView: React.FC<StreetViewProps> = ({ location, onViewChange, classNa
         const pos = panorama.getPosition();
         const pov = panorama.getPov();
         if (pos && pov) {
-          onViewChange(pos, pov);
+          onViewChange({
+            heading: pov.heading || 0,
+            pitch: pov.pitch || 0,
+            position: pos
+          });
         }
       });
 
@@ -101,7 +113,11 @@ const StreetView: React.FC<StreetViewProps> = ({ location, onViewChange, classNa
         const pos = panorama.getPosition();
         const pov = panorama.getPov();
         if (pos && pov) {
-          onViewChange(pos, pov);
+          onViewChange({
+            heading: pov.heading || 0,
+            pitch: pov.pitch || 0,
+            position: pos
+          });
         }
       });
     }
@@ -111,7 +127,7 @@ const StreetView: React.FC<StreetViewProps> = ({ location, onViewChange, classNa
     <div className={`street-view-container ${className}`}>
       <div 
         ref={streetViewRef} 
-        style={{ width: '100%', height: '100%' }}
+        className="street-view-panorama"
       />
       {!isLoaded && (
         <div className="street-view-loading">
